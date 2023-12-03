@@ -1,0 +1,79 @@
+Q1:
+SELECT customerID, first_name, last_name,
+    (
+        SELECT COUNT(orderID)
+        FROM orders
+        WHERE customerID = 'C239457108'
+        AND order_date >= (CURRENT_DATE - 30)
+
+    ) AS "Number_of_Orders_in_Last_30_Days"
+FROM customer         
+WHERE customerID = 'C239457108';
+
+
+Q2:
+SELECT ol.outletID,
+    ol.street AS outlet_street,
+    ol.suburb AS outlet_suburb,
+    COUNT(DISTINCT odr.orderID) AS "Number_of_Orders",
+    SUM(odrln.quantity * m.price) AS "Total_Revenue",
+    ROUND(AVG(f.review_score), 2) AS "Average_Customer_Rating"
+FROM outlets ol, orders odr, orderlines odrln, menu m, feedback f
+
+WHERE ol.outletID = odr.outletID
+AND odr.orderID = odrln.orderID
+AND odrln.itemID = m.itemID
+AND odr.orderID = f.orderID(+) -- outer join operator, left outer join
+AND odr.order_date >= (CURRENT_DATE - 90)
+
+GROUP BY ol.outletID, ol.street, ol.suburb
+
+HAVING COUNT(DISTINCT odr.orderID) >= 2
+
+ORDER BY "Total_Revenue" DESC;
+
+
+Q3:
+SELECT f.reviewID,
+    f.review_score,
+    f.review_text,
+    o.orderID,
+    o.order_date,
+    o.order_method,
+    mr_view.outletID,
+    mr_view.total_revenue
+
+FROM feedback f
+RIGHT OUTER JOIN orders o ON f.orderID = o.orderID
+JOIN monthly_revenue_view mr_view on o.outletID = mr_view.outletID
+
+WHERE mr_view.total_revenue < 200
+AND (f.review_score <= 3 OR f.review_score is NULL)
+AND o.order_date >= TRUNC(ADD_MONTHS(SYSDATE, -1), 'MONTH') -- Filter orders for the last month
+AND o.order_date < TRUNC(SYSDATE, 'MONTH') -- Exclude any orders from the current month;
+
+
+Q4:
+SELECT sf.staffID, 
+    sf.first_name AS staff_first_name, 
+    sf.last_name AS staff_last_name, 
+    sf.position, 
+    sf.phone_num,
+    sm.staffID AS manager_staffID, 
+    sm.first_name AS manager_first_name, 
+    sm.last_name AS manager_last_name, 
+    sf.outletID
+
+FROM staff sf
+INNER JOIN staff sm ON sf.outletID = sm.outletID 
+WHERE sm.staffID = 'SM12345'
+AND sf.position NOT LIKE '%Manager%';
+
+
+Q5:
+SELECT staffID, staff_first_name, staff_last_name
+FROM staff_customer_view
+WHERE staff_last_name LIKE 'Ch%'
+AND (customer_suburb LIKE '%Jaya%' OR customer_street LIKE '%Jaya%');
+
+
